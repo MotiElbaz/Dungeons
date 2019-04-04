@@ -19,6 +19,8 @@ private:
 	Point2D objects[MAX];
 	int width, height, counterAmmo, counterHealth;
 public:
+	int counterObject;
+public:
 	Room(const Point2D& center_point, int w, int h);
 	Point2D GetCenter() const;
 	bool isInRoom(int x, int y);
@@ -26,9 +28,11 @@ public:
 	int GetHeight();
 	void addAmmo();
 	void addHealth();
-	int generateRandCord(int width, int height, int check);
+	void addObjects();
+	int generateRandCord(int cordStart, int cordEnd, int check);
 	Point2D* getAmmo();
 	Point2D* getHealth();
+	Point2D* getObjects();
 	bool IsOverlap(const Room& other);
 };
 

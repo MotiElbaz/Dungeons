@@ -1,8 +1,10 @@
 #include "Figure.h"
 
-Figure::Figure(Point2D * p)
+Figure::Figure(Point2D * p ,int id)
 {
+	this->id = id;
 	this->setPoint(p);
+	this->target = nullptr;
 	health = 0;
 	ammo = 0;
 }
@@ -24,11 +26,16 @@ void Figure::addAmmo(int ammo)
 	{
 		this->ammo = 30;
 	}
+	cout << "Figure" << this->id << " Ammo : " << this->ammo << endl;
 }
 
 void Figure::removeAmmo(int ammo)
 {
 	this->ammo -= ammo;
+	if (this->ammo < 0)
+	{
+		this->ammo = 0;
+	}
 }
 
 int Figure::getAmmo()
@@ -43,11 +50,16 @@ void Figure::addHealth(int health)
 	{
 		this->health = 100;
 	}
+	cout << "Figure" << this->id << " Health : " << this->health << endl;
 }
 
 void Figure::removeHealth(int health)
 {
 	this->health -= health;
+	if (this->health < 0)
+	{
+		this->health = 0;
+	}
 }
 
 int Figure::getHealth()

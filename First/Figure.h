@@ -1,5 +1,8 @@
 #pragma once
 #include "Point2D.h"
+#include <iostream>
+using namespace std;
+
 class Figure
 {
 private:
@@ -7,7 +10,10 @@ private:
 	int ammo;
 	Point2D* p;
 public:
-	Figure(Point2D* p);
+	Point2D* target;
+	int id;
+public:
+	Figure(Point2D* p,int i);
 	Point2D* getPoint();
 	void setPoint(Point2D* p);
 	void addAmmo(int ammo);

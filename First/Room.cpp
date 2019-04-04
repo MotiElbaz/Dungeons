@@ -14,6 +14,7 @@ Room::Room(const Point2D& center_point, int w, int h)
 {
 	counterHealth = 0;
 	counterAmmo = 0;
+	counterObject = 0;
 	center = center_point;
 	width = w;
 	height = h;
@@ -47,9 +48,13 @@ bool Room::IsOverlap(const Room& other)
 
 bool Room::isInRoom(int x, int y)
 {
-	if ((center.GetX() - GetWidth() / 2) < x && x < (center.GetX() + GetWidth() / 2))
+	int widthStart = this->center.GetX() - this->GetWidth() / 2;
+	int widthEnd = this->center.GetX() + this->GetWidth() / 2;
+	int heightStart = this->center.GetY() - this->GetHeight() / 2;
+	int heightEnd = this->center.GetY() + this->GetHeight() / 2;
+	if (widthStart <= x && x <= widthEnd)
 	{
-		if ((center.GetX() - GetHeight() / 2) < y && y < (center.GetX() + GetHeight() / 2))
+		if (heightStart <= y && y <= heightEnd)
 		{
 			return true;
 		}
@@ -67,8 +72,8 @@ void Room::addAmmo()
 		widthEnd = center.GetX() + width / 2;
 		heightStart = center.GetY() - height / 2;
 		heightEnd = center.GetY() + height / 2;
-		randX = generateRandCord(widthStart, widthEnd , 0);
-		randY = generateRandCord(heightStart, heightEnd , 0);
+		randX = generateRandCord(widthStart, widthEnd , 4);
+		randY = generateRandCord(heightStart, heightEnd , 4);
 		Point2D tempAmmo(randX, randY);
 		ammo[counterAmmo] = tempAmmo;
 		counterAmmo++;
@@ -81,7 +86,7 @@ int Room::generateRandCord(int cordStart, int cordEnd , int check)
 	int random = 0;
 	srand(time(NULL));
 	do {
-		random = std::rand() % cordEnd - check;
+		random = std::rand() % cordEnd - check + counterAmmo + counterHealth + counterObject;
 	} while (random > cordEnd || random < cordStart);
 	return random;
 }
@@ -104,6 +109,24 @@ void Room::addHealth()
 	}
 }
 
+void Room::addObjects()
+{
+	// Generate randomize objects in the room. 
+	if (counterObject < MAX)
+	{
+		int widthStart, widthEnd, heightStart, heightEnd, randX, randY;
+		widthStart = center.GetX() - width / 2;
+		widthEnd = center.GetX() + width / 2;
+		heightStart = center.GetY() - height / 2;
+		heightEnd = center.GetY() + height / 2;
+		randX = generateRandCord(widthStart, widthEnd, -4);
+		randY = generateRandCord(heightStart, heightEnd, -4);
+		Point2D tempObject(randX, randY);
+		objects[counterObject] = tempObject;
+		counterObject++;
+	}
+}
+
 Point2D* Room::getAmmo()
 {
 	return ammo;
@@ -112,4 +135,9 @@ Point2D* Room::getAmmo()
 Point2D* Room::getHealth()
 {
 	return health;
+}
+
+Point2D * Room::getObjects()
+{
+	return objects;
 }

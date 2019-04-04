@@ -1,4 +1,0 @@
-	// The lack of good software engineering is known.
-	// Its because of the nature of rand() , i divided the function for to sections:
-	// One for the ammo , Second for the health.
-	// To get more random numbers , if i wouldnt do so , the ammo and the health will be in the same point.
