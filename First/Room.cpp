@@ -112,7 +112,7 @@ void Room::addHealth()
 void Room::addObjects()
 {
 	// Generate randomize objects in the room. 
-	if (counterObject < MAX)
+	if (counterObject < 4)
 	{
 		int widthStart, widthEnd, heightStart, heightEnd, randX, randY;
 		widthStart = center.GetX() - width / 2;

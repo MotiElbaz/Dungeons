@@ -16,7 +16,7 @@ private:
 	Point2D center;
 	Point2D health[MAX];
 	Point2D ammo[MAX];
-	Point2D objects[MAX];
+	Point2D objects[4];
 	int width, height, counterAmmo, counterHealth;
 public:
 	int counterObject;

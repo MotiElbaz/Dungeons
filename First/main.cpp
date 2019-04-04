@@ -427,10 +427,10 @@ void moveFigure(int(*mazeFigure)[MSIZE][MSIZE], Figure* figure, int start, int t
 			figure->addAmmo(FOUND);
 			maze[y][x] = SPACE;
 		}
-		else if (maze[y][x] == rival)
+		/*else if (maze[y][x] == rival)
 		{
 
-		}
+		}*/
 	}
 	else // moving on the gray path
 	{
@@ -455,6 +455,7 @@ void moveFigure(int(*mazeFigure)[MSIZE][MSIZE], Figure* figure, int start, int t
 		else
 		{
 			(*astar_started) = true;
+			figure->target = nullptr;
 		}
 		pt = new Point2D(x, y);
 		figure->setPoint(pt);
@@ -654,18 +655,26 @@ Room* getFarestRoom(Figure* figure)
 
 void runFigure(Figure* figure, int type, int(*mazeFigure)[MSIZE][MSIZE], int figureNum, bool* astar_started, Figure* rival, int rivalNum, Point2D* parentAStar[MSIZE][MSIZE], bool* figureRun)
 {
+	bool gotTarget = false;
 	Point2D* targetPoint;
 	if ((*astar_started) == false) // Movment of the board.
 	{
 		timer();
 		moveFigure(&(*mazeFigure), figure, figureNum, TARGET, astar_started, rivalNum);
+		if (figure->getPoint()->GetX() == rival->getPoint()->GetX() && 
+			figure->getPoint()->GetY() == rival->getPoint()->GetY() &&
+			getRoom(figure->getPoint()->GetX(), figure->getPoint()->GetY()) != nullptr )
+		{
+			// means they stuck and not doing missions anymore
+			(*astar_started) = true;
+			(*figureRun) = true;
+		}
 		if (getRoom(figure->getPoint()->GetX(), figure->getPoint()->GetY()) ==
 			getRoom(rival->getPoint()->GetX(), rival->getPoint()->GetY()) &&
 			getRoom(figure->getPoint()->GetX(), figure->getPoint()->GetY()) != nullptr)
 		{
-			if (figure->getAmmo() <= 0 || figure->getHealth() <= 0)
+			if (figure->getAmmo() <= 0 && figure->getHealth() <= 0)
 			{
-				cout << "Figure" << figure->id << " Running from fight to survive , Health : " << figure->getHealth() << " , Ammo : " << figure->getAmmo() << endl;
 				(*astar_started) = true;
 				(*figureRun) = true;
 			}
@@ -703,13 +712,14 @@ void runFigure(Figure* figure, int type, int(*mazeFigure)[MSIZE][MSIZE], int fig
 					return;
 				}
 				cout << "Figure" << figure->id << " searching for Rival , Health : " << figure->getHealth() << " , Ammo : " << figure->getAmmo() << endl;
-				targetPoint = &(room->GetCenter());
 				Point2D* p = new Point2D(room->GetCenter().GetX(),room->GetCenter().GetY());
+				targetPoint = &(room->GetCenter());
 				figure->target = p;
-				if (counter == 10)
+				if (counter == 5)
 				{
 					counter = 0;
-					targetPoint = &(getFarestRoom(figure)->GetCenter());
+					//targetPoint = &(getFarestRoom(figure)->GetCenter());
+					targetPoint = new Point2D(getFarestRoom(figure)->GetCenter().GetX(), getFarestRoom(figure)->GetCenter().GetY());
 					figure->target = targetPoint;
 				}
 				counter++;
@@ -718,12 +728,14 @@ void runFigure(Figure* figure, int type, int(*mazeFigure)[MSIZE][MSIZE], int fig
 		else
 		{
 			targetPoint = figure->target;
+			gotTarget = true;
 		}
-		if ((*figureRun) == true)
+		if ((*figureRun) == true && gotTarget == false)
 		{
+			cout << "Figure" << figure->id << " Running from fight to survive , Health : " << figure->getHealth() << " , Ammo : " << figure->getAmmo() << endl;
 			(*figureRun) = false;
 			Room* room = getFarestRoom(figure);
-			targetPoint = &(room->GetCenter());
+			targetPoint = new Point2D(room->GetCenter().GetX(), room->GetCenter().GetY());
 		}
 		pq.push(figure->getPoint());
 		(*mazeFigure)[targetPoint->GetY()][targetPoint->GetX()] = TARGET;
@@ -771,7 +783,7 @@ void addObjects()
 	int counter = 0;
 	for (int i = 0; i < NUM_ROOMS; i++)
 	{
-		for (int j = 0; j < Room::MAX; j++)
+		for (int j = 0; j < 4; j++)
 		{
 			all_rooms[i]->addObjects();
 		}
@@ -779,7 +791,7 @@ void addObjects()
 	for (int i = 0; i < NUM_ROOMS; i++)
 	{
 		Point2D* tempObjects = all_rooms[i]->getObjects();
-		for (int j = 0; j < Room::MAX; j++)
+		for (int j = 0; j < 4; j++)
 		{
 			allObjects.push_back(&tempObjects[j]);
 			maze[tempObjects[j].GetY()][tempObjects[j].GetX()] = OBJECT;
