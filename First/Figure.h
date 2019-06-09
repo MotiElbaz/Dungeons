@@ -12,6 +12,7 @@ private:
 public:
 	Point2D* target;
 	int id;
+	int type;
 public:
 	Figure(Point2D* p,int i);
 	Point2D* getPoint();
@@ -22,4 +23,5 @@ public:
 	void addHealth(int health);
 	void removeHealth(int health);
 	int getHealth();
+	void setTarget(Point2D* target, int type);
 };

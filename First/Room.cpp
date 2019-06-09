@@ -48,10 +48,10 @@ bool Room::IsOverlap(const Room& other)
 
 bool Room::isInRoom(int x, int y)
 {
-	int widthStart = this->center.GetX() - this->GetWidth() / 2;
-	int widthEnd = this->center.GetX() + this->GetWidth() / 2;
-	int heightStart = this->center.GetY() - this->GetHeight() / 2;
-	int heightEnd = this->center.GetY() + this->GetHeight() / 2;
+	int widthStart = this->center.GetX() - ( this->GetWidth() / 2 );
+	int widthEnd = this->center.GetX() + ( this->GetWidth() / 2 );
+	int heightStart = this->center.GetY() - ( this->GetHeight() / 2 );
+	int heightEnd = this->center.GetY() + ( this->GetHeight() / 2 );
 	if (widthStart <= x && x <= widthEnd)
 	{
 		if (heightStart <= y && y <= heightEnd)
@@ -72,8 +72,8 @@ void Room::addAmmo()
 		widthEnd = center.GetX() + width / 2;
 		heightStart = center.GetY() - height / 2;
 		heightEnd = center.GetY() + height / 2;
-		randX = generateRandCord(widthStart, widthEnd , 4);
-		randY = generateRandCord(heightStart, heightEnd , 4);
+		randX = generateRandCord(widthStart, widthEnd , -2);
+		randY = generateRandCord(heightStart, heightEnd , -2);
 		Point2D tempAmmo(randX, randY);
 		ammo[counterAmmo] = tempAmmo;
 		counterAmmo++;

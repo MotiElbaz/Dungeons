@@ -1,4 +1,1 @@
-﻿  main.cpp
-c:\users\dell\desktop\dungeons\first\main.cpp(888): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
-  First.vcxproj -> C:\Users\DELL\Desktop\Dungeons\Debug\First.exe
-  First.vcxproj -> C:\Users\DELL\Desktop\Dungeons\Debug\First.pdb (Full PDB)
+﻿

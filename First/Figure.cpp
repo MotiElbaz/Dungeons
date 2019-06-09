@@ -66,3 +66,9 @@ int Figure::getHealth()
 {
 	return health;
 }
+
+void Figure::setTarget(Point2D * target, int type)
+{
+	this->target = target;
+	this->type = type;
+}

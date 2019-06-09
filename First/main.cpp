@@ -346,7 +346,7 @@ bool astar_started_figure1 = true;
 bool astar_started_figure2 = true;
 bool figure1Run = false;
 bool figure2Run = false;
-int counter = 0;
+int counterStuck = 0;
 Room* all_rooms[NUM_ROOMS];
 
 priority_queue <Point2D, vector <Point2D*>, CompareNodes> allHealth;
@@ -377,6 +377,7 @@ Room* getRoom(int x, int y)
 
 void timer()
 {
+	// 10000000
 	for (int i = 0; i < 10000000; i++)
 	{
 
@@ -394,7 +395,30 @@ void copyMatrix(int(*matrix1)[MSIZE][MSIZE], int(*matrix2)[MSIZE][MSIZE])
 	}
 }
 
-void moveFigure(int(*mazeFigure)[MSIZE][MSIZE], Figure* figure, int start, int target, bool* astar_started, int rival)
+void returnObject(Figure* figure)
+{
+	// Putting the object in the vector
+	//cout << "here" << endl;
+	if (figure->target == nullptr)
+	{
+		figure->type = 0;
+		return;
+	}
+	if (figure->type == AMMO)
+	{
+		allAmmo.push(figure->target);
+		figure->target = nullptr;
+		figure->type = 0;
+	}
+	else if (figure->type == HEALTH)
+	{
+		allHealth.push(figure->target);
+		figure->target = nullptr;
+		figure->type = 0;
+	}
+}
+
+void moveFigure(int(*mazeFigure)[MSIZE][MSIZE], Figure* figure, int start, int target, bool* astar_started, int rival, bool* figureRun)
 {
 	Point2D* pt;
 	int x, y;
@@ -415,22 +439,29 @@ void moveFigure(int(*mazeFigure)[MSIZE][MSIZE], Figure* figure, int start, int t
 		{
 			x--;
 		}
+		(*figureRun) = false;
 		(*astar_started) = true;
 		figure->target = nullptr;
+		figure->type = 0;
 		if (maze[y][x] == HEALTH)
 		{
 			figure->addHealth(FOUND);
+			cout << "Health left : " << allHealth.size() << endl;
 			maze[y][x] = SPACE;
+			//figure->type = 0;
 		}
 		else if (maze[y][x] == AMMO)
 		{
 			figure->addAmmo(FOUND);
+			cout << "Ammo left : " << allAmmo.size() << endl;
 			maze[y][x] = SPACE;
+			//figure->type = 0;
 		}
 		/*else if (maze[y][x] == rival)
 		{
 
 		}*/
+		//maze[y][x] = SPACE;
 	}
 	else // moving on the gray path
 	{
@@ -454,8 +485,10 @@ void moveFigure(int(*mazeFigure)[MSIZE][MSIZE], Figure* figure, int start, int t
 		}
 		else
 		{
+			returnObject(figure);
 			(*astar_started) = true;
 			figure->target = nullptr;
+			figure->type = 0;
 		}
 		pt = new Point2D(x, y);
 		figure->setPoint(pt);
@@ -582,7 +615,7 @@ Point2D* getObject(priority_queue <Point2D, vector <Point2D*>, CompareNodes>* pq
 void fight(Figure* figure, Figure* rival)
 {
 	double damage = 0.0;
-	int startX, endX, startY, endY, numOfSpace = 0, rivalX, rivalY, figureX, figureY, empty = 30;
+	int startX, endX, startY, endY, numOfSpace = 0, rivalX, rivalY, figureX, figureY, empty = 40;
 	rivalX = rival->getPoint()->GetX();
 	rivalY = rival->getPoint()->GetY();
 	figureX = figure->getPoint()->GetX();
@@ -619,8 +652,8 @@ void fight(Figure* figure, Figure* rival)
 	}
 	damage = sqrt(pow(figureX - rivalX, 2) + pow(figureY - rivalY, 2)) * 0.1 * empty;
 	int d = (int)damage;
-	if(damage < 20)
-		 d  /= 20;
+	if (damage > 20)
+		d /= 20;
 	if (figure->getAmmo() > 0)
 	{
 		cout << "Figure" << figure->id << " Shot on rival and make damage : " << d << endl;
@@ -639,7 +672,7 @@ Room* getFarestRoom(Figure* figure)
 	roomX = all_rooms[0]->GetCenter().GetX();
 	roomY = all_rooms[0]->GetCenter().GetY();
 	distanceCur = sqrt(pow(x - roomX, 2) + pow(y - roomY, 2));
-	for (int i = 1; i < NUM_ROOMS ; i++)
+	for (int i = 1; i < NUM_ROOMS; i++)
 	{
 		roomX = all_rooms[i]->GetCenter().GetX();
 		roomY = all_rooms[i]->GetCenter().GetY();
@@ -653,103 +686,143 @@ Room* getFarestRoom(Figure* figure)
 	return room;
 }
 
+Room* getNearestRoom(Figure* figure)
+{
+	int x, y, roomX, roomY;
+	double distanceCur, distanceNew;
+	Room* room = all_rooms[0];
+	x = figure->getPoint()->GetX();
+	y = figure->getPoint()->GetY();
+	roomX = all_rooms[0]->GetCenter().GetX();
+	roomY = all_rooms[0]->GetCenter().GetY();
+	distanceCur = sqrt(pow(x - roomX, 2) + pow(y - roomY, 2));
+	for (int i = 1; i < NUM_ROOMS; i++)
+	{
+		roomX = all_rooms[i]->GetCenter().GetX();
+		roomY = all_rooms[i]->GetCenter().GetY();
+		distanceNew = sqrt(pow(x - roomX, 2) + pow(y - roomY, 2));
+		if (distanceNew < distanceCur && room != all_rooms[i])
+		{
+			distanceCur = distanceNew;
+			room = all_rooms[i];
+		}
+	}
+	return room;
+}
+
+Room* getRandomRoom(Figure* figure,Figure* rival)
+{
+	int randRoom;
+	do {
+		randRoom = rand() % 10;
+	} while (all_rooms[randRoom] == getRoom(rival->getPoint()->GetX(),rival->getPoint()->GetY()));
+	return all_rooms[randRoom];
+}
+
+void setTarget(Figure* figure, Point2D* target, int type)
+{
+	figure->target = target;
+	figure->type = type;
+}
+
 void runFigure(Figure* figure, int type, int(*mazeFigure)[MSIZE][MSIZE], int figureNum, bool* astar_started, Figure* rival, int rivalNum, Point2D* parentAStar[MSIZE][MSIZE], bool* figureRun)
 {
-	bool gotTarget = false;
 	Point2D* targetPoint;
 	if ((*astar_started) == false) // Movment of the board.
 	{
 		timer();
-		moveFigure(&(*mazeFigure), figure, figureNum, TARGET, astar_started, rivalNum);
-		if (figure->getPoint()->GetX() == rival->getPoint()->GetX() && 
-			figure->getPoint()->GetY() == rival->getPoint()->GetY() &&
-			getRoom(figure->getPoint()->GetX(), figure->getPoint()->GetY()) != nullptr )
-		{
-			// means they stuck and not doing missions anymore
-			(*astar_started) = true;
-			(*figureRun) = true;
-		}
+		moveFigure(&(*mazeFigure), figure, figureNum, TARGET, astar_started, rivalNum,figureRun);
 		if (getRoom(figure->getPoint()->GetX(), figure->getPoint()->GetY()) ==
 			getRoom(rival->getPoint()->GetX(), rival->getPoint()->GetY()) &&
 			getRoom(figure->getPoint()->GetX(), figure->getPoint()->GetY()) != nullptr)
 		{
-			if (figure->getAmmo() <= 0 && figure->getHealth() <= 0)
+			if (figure->getAmmo() <= 0 || figure->getHealth() <= 0)
 			{
 				(*astar_started) = true;
 				(*figureRun) = true;
 			}
 			else
 			{
+				//cout << "here" << endl;
 				fight(figure, rival);
 			}
 		}
 	}
 	else
 	{
-		copyMatrix(&(*mazeFigure), &maze);
+		returnObject(figure);
+		//copyMatrix(&(*mazeFigure), &maze);
 		while (!pq.empty())
 			pq.pop();
-		if (figure->target == nullptr)
+		if ((*figureRun) == true)
+		{
+			(*figureRun) = false;
+			if (figure->type == -1)
+			{
+				(*astar_started) = false;
+				return;
+			}
+			else
+			{
+				Room* room = getRandomRoom(figure, rival);
+				targetPoint = new Point2D(room->GetCenter().GetX(), room->GetCenter().GetY());
+				figure->setTarget(targetPoint, -1);
+				cout << "Figure" << figure->id << " Running from fight to survive , Health : " << figure->getHealth() << " , Ammo : " << figure->getAmmo() << endl;
+			}
+		}
+		else
 		{
 			if (figure->getHealth() < type && allHealth.size() > 0)
 			{
 				cout << "Figure" << figure->id << " searching for Health, Current Health : " << figure->getHealth() << endl;
 				targetPoint = getObject(&allHealth, figure);
-				figure->target = targetPoint;
+				setTarget(figure, targetPoint, HEALTH);
 			}
 			else if (figure->getAmmo() < type && allAmmo.size() > 0)
 			{
 				cout << "Figure" << figure->id << " searching for Ammo, Current Ammo : " << figure->getAmmo() << endl;
 				targetPoint = getObject(&allAmmo, figure);
-				figure->target = targetPoint;
+				setTarget(figure, targetPoint, AMMO);
 			}
 			else
 			{
+				counterStuck++;
 				targetPoint = rival->getPoint();
-				Room* room = getRoom(targetPoint->GetX(), targetPoint->GetY());
-				if (room == nullptr)
+				Room* room = getRoom(targetPoint->GetX(),targetPoint->GetY());
+				if (room != nullptr)
 				{
+					targetPoint = new Point2D(room->GetCenter().GetX(), room->GetCenter().GetY());
+				}
+				if(room == nullptr || counterStuck == 10)
+				{
+					counterStuck = 0;
+					room = getRandomRoom(figure,rival);
+					targetPoint = new Point2D(room->GetCenter().GetX(), room->GetCenter().GetY());
+				}
+				if (figure->getHealth() == 0 || figure->getAmmo() == 0)
+				{
+					(*figureRun) = true;
 					return;
 				}
 				cout << "Figure" << figure->id << " searching for Rival , Health : " << figure->getHealth() << " , Ammo : " << figure->getAmmo() << endl;
-				Point2D* p = new Point2D(room->GetCenter().GetX(),room->GetCenter().GetY());
-				targetPoint = &(room->GetCenter());
-				figure->target = p;
-				if (counter == 5)
-				{
-					counter = 0;
-					//targetPoint = &(getFarestRoom(figure)->GetCenter());
-					targetPoint = new Point2D(getFarestRoom(figure)->GetCenter().GetX(), getFarestRoom(figure)->GetCenter().GetY());
-					figure->target = targetPoint;
-				}
-				counter++;
+				setTarget(figure, targetPoint, FIGURE1);
 			}
 		}
-		else
-		{
-			targetPoint = figure->target;
-			gotTarget = true;
-		}
-		if ((*figureRun) == true && gotTarget == false)
-		{
-			cout << "Figure" << figure->id << " Running from fight to survive , Health : " << figure->getHealth() << " , Ammo : " << figure->getAmmo() << endl;
-			(*figureRun) = false;
-			Room* room = getFarestRoom(figure);
-			targetPoint = new Point2D(room->GetCenter().GetX(), room->GetCenter().GetY());
-		}
+	
 		pq.push(figure->getPoint());
+		copyMatrix(&(*mazeFigure), &maze);
 		(*mazeFigure)[targetPoint->GetY()][targetPoint->GetX()] = TARGET;
 		while ((*astar_started)) // Only findning the path.
 		{
 			AStarIteration(parentAStar, &(*mazeFigure), TARGET, figureNum, targetPoint, astar_started);
 		}
+
 	}
 }
 
 void addAmmo()
 {
 	int counter = 0;
-	// Ammo section.
 	for (int i = 0; i < NUM_ROOMS; i++)
 	{
 		for (int j = 0; j < Room::MAX; j++)
@@ -762,20 +835,15 @@ void addAmmo()
 		Point2D* tempAmmo = all_rooms[i]->getAmmo();
 		for (int j = 0; j < Room::MAX; j++)
 		{
-			allAmmo.push(&tempAmmo[j]);
-			maze[tempAmmo[j].GetY()][tempAmmo[j].GetX()] = AMMO;
+			int x = tempAmmo[j].GetX();
+			int y = tempAmmo[j].GetY();
+			if (maze[y][x] == SPACE)
+			{
+				allAmmo.push(&tempAmmo[j]);
+				maze[y][x] = AMMO;
+			}
 		}
 	}
-	/*for (int i = 0; i < NUM_ROOMS; i++)
-	{
-		Point2D* tempAmmo = all_rooms[i]->getAmmo();
-		for (int j = 0; j < Room::MAX; j++)
-		{
-			all_ammo[counter] = &tempAmmo[j];
-			maze[all_ammo[counter]->GetY()][all_ammo[counter]->GetX()] = AMMO;
-			counter++;
-		}
-	}*/
 }
 
 void addObjects()
@@ -793,8 +861,13 @@ void addObjects()
 		Point2D* tempObjects = all_rooms[i]->getObjects();
 		for (int j = 0; j < 4; j++)
 		{
-			allObjects.push_back(&tempObjects[j]);
-			maze[tempObjects[j].GetY()][tempObjects[j].GetX()] = OBJECT;
+			int x = tempObjects[j].GetX();
+			int y = tempObjects[j].GetY();
+			if (maze[y][x] == SPACE)
+			{
+				allObjects.push_back(&tempObjects[j]);
+				maze[y][x] = OBJECT;
+			}
 		}
 	}
 }
@@ -814,8 +887,13 @@ void addHealth()
 		Point2D* tempHealth = all_rooms[i]->getHealth();
 		for (int j = 0; j < Room::MAX; j++)
 		{
-			allHealth.push(&tempHealth[j]);
-			maze[tempHealth[j].GetY()][tempHealth[j].GetX()] = HEALTH;
+			int x = tempHealth[j].GetX();
+			int y = tempHealth[j].GetY();
+			if (maze[y][x] == SPACE)
+			{
+				allHealth.push(&tempHealth[j]);
+				maze[y][x] = HEALTH;
+			}
 		}
 	}
 }
@@ -847,13 +925,9 @@ void init()
 	all_rooms[9] = new Room(Point2D(73, 94), 5, 22);
 	//
 
-	RANDOMIZE_AGGRESIVE = all_rooms[0]->generateRandCord(20, 40 , 0);
+	RANDOMIZE_AGGRESIVE = all_rooms[0]->generateRandCord(20, 40, 0);
 	RANDOMIZE_CALM = all_rooms[0]->generateRandCord(40, 60, 0);
-
-	addObjects();
-	addAmmo();
-	addHealth();
-
+	
 	int randRoom, widthStart, widthEnd, heightStart, heightEnd, x, y;
 	randRoom = rand() % 10;
 	widthStart = all_rooms[randRoom]->GetCenter().GetX() - all_rooms[randRoom]->GetWidth() / 2;
@@ -861,8 +935,12 @@ void init()
 	heightStart = all_rooms[randRoom]->GetCenter().GetY() - all_rooms[randRoom]->GetHeight() / 2;
 	heightEnd = all_rooms[randRoom]->GetCenter().GetY() + all_rooms[randRoom]->GetHeight() / 2;
 
-	x = all_rooms[randRoom]->generateRandCord(widthStart, widthEnd, -2);
-	y = all_rooms[randRoom]->generateRandCord(heightStart, heightEnd, -2);
+	do
+	{
+		x = all_rooms[randRoom]->generateRandCord(widthStart, widthEnd, -2);
+		y = all_rooms[randRoom]->generateRandCord(heightStart, heightEnd, -2);
+	} while (maze[y][x] != SPACE);
+	
 	Point2D* point = new Point2D(x, y);
 	//Point2D* point = new Point2D(0, 0);
 	figure1 = new Figure(point, 1);
@@ -877,13 +955,22 @@ void init()
 	heightStart = all_rooms[randRoom]->GetCenter().GetY() - all_rooms[randRoom]->GetHeight() / 2;
 	heightEnd = all_rooms[randRoom]->GetCenter().GetY() + all_rooms[randRoom]->GetHeight() / 2;
 
-	x = all_rooms[randRoom]->generateRandCord(widthStart, widthEnd, -2);
-	y = all_rooms[randRoom]->generateRandCord(heightStart, heightEnd, -2);
+	do
+	{
+		x = all_rooms[randRoom]->generateRandCord(widthStart, widthEnd, -2);
+		y = all_rooms[randRoom]->generateRandCord(heightStart, heightEnd, -2);
+	} while (maze[y][x] != SPACE);
+
 	Point2D* p = new Point2D(x, y);
 	//Point2D* p = new Point2D(0, 0);
 	figure2 = new Figure(p, 2);
 	maze[y][x] = FIGURE2;
 	mazeFigure2[y][x] = FIGURE2;
+
+	addHealth();
+	addAmmo();
+	cout << "Number of HEALTH : " << allHealth.size() << " , Number of AMMO : " << allAmmo.size() << endl;
+	addObjects();
 
 	glClearColor(0.7, 0.7, 0.7, 0);
 
@@ -961,6 +1048,7 @@ void idle()
 {
 	//runFigure(figure1, RANDOMIZE_AGGRESIVE, &mazeFigure1, FIGURE1, &astar_started_figure1, figure2, FIGURE2, parentAStarFigure1, &figure1Run);
 	//runFigure(figure2, RANDOMIZE_CALM, &mazeFigure2, FIGURE2, &astar_started_figure2, figure1, FIGURE1, parentAStarFigure2, &figure2Run);
+	
 	runFigure(figure1, AGGRESIVE, &mazeFigure1, FIGURE1, &astar_started_figure1, figure2, FIGURE2, parentAStarFigure1, &figure1Run);
 	runFigure(figure2, CALM, &mazeFigure2, FIGURE2, &astar_started_figure2, figure1, FIGURE1, parentAStarFigure2, &figure2Run);
 	glutPostRedisplay();// calls indirectly to display
